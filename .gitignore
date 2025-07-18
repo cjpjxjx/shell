@@ -1,0 +1,51 @@
+# Ignore editor swap/backup files
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Ignore log files
+*.log
+
+# Ignore compiled binaries and object files
+*.out
+*.o
+*.a
+*.so
+
+# Ignore core dumps
+core
+core.*
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore history files
+.bash_history
+.zsh_history
+
+# Ignore test output
+/test-output/
+
+# Ignore custom local config
+config.local
+
+# Ignore node_modules (if using Node.js tools)
+node_modules/
+
+# Ignore coverage reports
+coverage/
+*.lcov
+
+# Ignore build directories
+build/
+dist/
+
+# Ignore temporary files
+/tmp/ 
