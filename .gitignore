@@ -24,7 +24,6 @@ Thumbs.db
 
 # Ignore environment files
 .env
-.env.*
 
 # Ignore history files
 .bash_history
