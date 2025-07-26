@@ -11,10 +11,10 @@
 
 ### 1. 安装脚本
 
-将 `network-watchdog.sh` 文件保存到 `/usr/local/bin/` 目录下，并赋予执行权限。
+将 `network-watchdog.sh` 文件下载到 `/usr/local/bin/` 目录下，并赋予执行权限。
 
 ```bash
-mv network-watchdog.sh /usr/local/bin/
+wget -O /usr/local/bin/network-watchdog.sh https://git.cencs.com/cjpjxjx/shell/raw/branch/main/network-watchdog/network-watchdog.sh
 chmod +x /usr/local/bin/network-watchdog.sh
 ```
 
