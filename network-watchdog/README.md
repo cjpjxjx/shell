@@ -7,7 +7,26 @@
 - **轻量级**: 脚本非常轻量，对系统资源占用极小。
 - **可配置**: 目标 IP、监控关键词和检查间隔时间都可以轻松修改。
 
+## 配置
+
+默认情况下，脚本会自动将网关作为监控目标。如果无法自动获取，则会使用 `8.8.8.8` 作为备用地址。
+
+如果需要自定义，可以直接编辑 `network-watchdog.sh` 脚本顶部的变量：
+
+- `TARGET_IP`: **(不建议修改)** 监控的目标 IP 地址。留空时脚本会自动获取网关。
+- `LOG_KEYWORD`: 内核日志中需要匹配的关键字。
+- `MONITOR_INTERVAL`: 检查间隔，单位为秒。
+- `LOG_FILE`: 日志文件的路径。
+
 ## 使用方法
+
+### 依赖
+
+本脚本依赖以下命令行工具，请确保您的系统已安装：
+
+- `ping` (通常由 `iputils-ping` 包提供)
+- `ip` (通常由 `iproute2` 包提供)
+- `journalctl` (由 `systemd` 提供)
 
 ### 1. 安装脚本
 
@@ -51,31 +70,14 @@ systemctl enable network-watchdog.service
 systemctl start network-watchdog.service
 ```
 
-现在，`network-watchdog` 服务已在后台运行。你可以使用 `sudo systemctl status network-watchdog.service` 命令检查其状态。
+现在，`network-watchdog` 服务已在后台运行。你可以使用 `systemctl status network-watchdog.service` 命令检查其状态。
 
-## 日志管理
+## 日志
 
-脚本的日志输出到 `/var/log/network-watchdog.log` 文件。为了防止日志文件无限增长，强烈建议配置 `logrotate` 来管理日志轮转。
+脚本会将网络中断、内核日志检查等关键事件记录到 `/var/log/network-watchdog.log` 文件中。
 
-### 1. 创建 `logrotate` 配置文件
+你可以通过以下命令实时查看日志：
 
 ```bash
-vim /etc/logrotate.d/network-watchdog
+tail -f /var/log/network-watchdog.log
 ```
-
-### 2. 粘贴配置内容
-
-将以下内容粘贴到文件中，这会设置日志每天轮转一次，保留 7 个历史文件，并进行压缩。
-
-```
-/var/log/network-watchdog.log {
-    daily
-    missingok
-    rotate 7
-    compress
-    notifempty
-    create 0640 root root
-}
-```
-
-配置完成后，`logrotate` 将自动接管日志文件的管理。
