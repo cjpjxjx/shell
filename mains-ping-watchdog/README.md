@@ -12,9 +12,11 @@
 
 ## 快速开始
 1. 使用 wget 下载脚本到 `/usr/local/bin/mains-ping-watchdog.sh`：
+
    ```bash
    wget -O /usr/local/bin/mains-ping-watchdog.sh 'https://git.cencs.com/cjpjxjx/shell/raw/branch/main/mains-ping-watchdog/mains-ping-watchdog.sh'
    ```
+
 2. 编辑 `mains-ping-watchdog.sh` 中的变量：
    - `TARGETS`: 以空格分隔的目标 IP 列表（都必须是市电供电设备）。
    - `OUTAGE_SECONDS`: 市电中断判定时长（秒），默认 180（3 分钟）。
@@ -23,12 +25,14 @@
    - `PING_TIMEOUT`: 单次 ping 超时（秒），默认 1。
    - `LOG_FILE`: 非空时输出到此文件，否则仅打印到标准输出（默认 `/var/log/mains-ping-watchdog.log`）。
 3. 赋予可执行权限：
+
    ```bash
    chmod +x /usr/local/bin/mains-ping-watchdog.sh
    ```
 
 ## systemd 部署
 创建单元文件 `/etc/systemd/system/mains-ping-watchdog.service`：
+
 ```ini
 [Unit]
 Description=Mains power watchdog via ping
@@ -45,7 +49,9 @@ User=root
 [Install]
 WantedBy=multi-user.target
 ```
+
 加载并启动：
+
 ```bash
 systemctl daemon-reload
 systemctl enable --now mains-ping-watchdog.service
