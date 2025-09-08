@@ -22,8 +22,11 @@ PULL_RETRIES=3
 # 每次重试之间的等待时间（秒）
 PULL_RETRY_DELAY=10
 
-# 每个项目更新成功后执行的后置命令
-# 注意：此命令会在【任何一个】项目成功更新后【立即】执行。
+# 项目更新间的延时时间（秒）
+PROJECT_UPDATE_DELAY=3
+
+# 每个项目有实际更新时执行的后置命令
+# 注意：只有在检测到容器实际更新时才会执行此命令
 # 如果不需要，留空即可，例如: PROJECT_POST_COMMAND=""
 PROJECT_POST_COMMAND="docker exec nginx nginx -s reload"
 
@@ -71,6 +74,7 @@ main() {
     fi
 
     local update_count=0
+    local project_count=0
 
     # 遍历基础目录下的所有子目录
     for project_dir in "$COMPOSE_BASE_DIR"/*/; do
@@ -79,6 +83,15 @@ main() {
         local project_name=$(basename "$project_dir")
         
         log "INFO" "--- 正在处理项目: $project_name ---"
+        
+        # 递增项目处理计数
+        project_count=$((project_count + 1))
+        
+        # 如果不是第一个项目，则添加延时
+        if [ $project_count -gt 1 ]; then
+            log "INFO" "等待 $PROJECT_UPDATE_DELAY 秒后处理下一个项目..."
+            sleep "$PROJECT_UPDATE_DELAY"
+        fi
 
         # 切换到项目目录
         cd "$project_dir" || { log "WARN" "无法进入目录 $project_dir，跳过。"; continue; }
@@ -120,7 +133,7 @@ main() {
             continue
         fi
 
-        # 2) up -d（不判断输出，交给 docker compose 自行处理）
+        # 2) up -d（检测是否有实际更新）
         log "INFO" "正在执行 'docker compose up -d'..."
         set +e
         up_output=$(docker compose up -d 2>&1)
@@ -131,10 +144,22 @@ main() {
             log "ERROR" "项目 $project_name 执行 'docker compose up -d' 失败(返回码 $up_exit_code)，请检查以上输出。"
             continue
         fi
+        
+        # 检测是否有实际更新（检查输出中是否包含重新创建或启动的容器）
+        local has_updates=false
+        # 检测英文和中文输出中的关键词，表示容器有实际变化
+        if echo "$up_output" | grep -qEi "(Recreating|Starting|Created|Recreated|Restarting|recreated|started|restarted|重新创建|启动|已创建|重启)"; then
+            has_updates=true
+            log "INFO" "检测到容器有实际更新。"
+            # 只有在有实际更新时才递增计数
+            update_count=$((update_count + 1))
+        else
+            log "INFO" "未检测到容器更新（所有容器都是最新状态）。"
+        fi
 
-        # 3) 无条件执行通用后置命令（若已配置）
-        if [ -n "$PROJECT_POST_COMMAND" ]; then
-            log "INFO" "正在为 $project_name 执行后置命令: $PROJECT_POST_COMMAND"
+        # 3) 只有在有实际更新时才执行后置命令
+        if [ "$has_updates" = true ] && [ -n "$PROJECT_POST_COMMAND" ]; then
+            log "INFO" "项目 $project_name 有更新，正在执行后置命令: $PROJECT_POST_COMMAND"
             set +e
             eval "$PROJECT_POST_COMMAND"
             post_rc=$?
@@ -144,6 +169,8 @@ main() {
             else
                 log "ERROR" "后置命令执行失败，返回码: $post_rc"
             fi
+        elif [ "$has_updates" = false ] && [ -n "$PROJECT_POST_COMMAND" ]; then
+            log "INFO" "项目 $project_name 无更新，跳过后置命令执行。"
         fi
     done
 
@@ -162,7 +189,13 @@ main() {
         fi
     fi
     
-    log "INFO" "本次运行共处理了 $update_count 个项目。"
+    log "INFO" "====== 执行统计 ======"
+    log "INFO" "扫描项目总数: $project_count"
+    log "INFO" "实际更新项目数: $update_count"
+    if [ $project_count -gt 0 ]; then
+        local no_update_count=$((project_count - update_count))
+        log "INFO" "无需更新项目数: $no_update_count"
+    fi
     log "INFO" "====== Docker Compose 更新脚本执行完毕 ======"
 }
 
